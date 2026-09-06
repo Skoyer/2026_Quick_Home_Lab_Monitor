@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Home Lab Monitor</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="wrap">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Local network</p>
+          <h1>Home Lab Monitor</h1>
+          <p class="lede">Reachability checks for the internet and local AI services.</p>
+        </div>
+        <div class="meta">
+          <p id="checked-at">Waiting for first check…</p>
+          <p id="config-source"></p>
+          <button id="refresh" type="button">Check now</button>
+        </div>
+      </header>
+      <section id="cards" class="cards" aria-live="polite"></section>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

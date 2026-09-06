@@ -1,0 +1,34 @@
+# Example service map for the public repository.
+# Hosts below are fictitious. Copy this file to private/services.yaml
+# and replace example hosts with your real LAN values.
+
+dashboard:
+  host: 127.0.0.1
+  port: 8080
+  refresh_seconds: 10
+  timeout_seconds: 5
+
+internet:
+  id: internet
+  name: Can I Reach the Internet
+  urls:
+    - https://www.google.com/generate_204
+    - https://www.cloudflare.com/cdn-cgi/trace
+    - https://1.1.1.1/cdn-cgi/trace
+  success_threshold: 2
+
+services:
+  - id: lm_studio
+    name: Can I see LM Studio
+    scheme: http
+    host: 10.42.0.10
+    port: 1234
+    path: /v1/models
+    expect_status: 200
+  - id: ollama
+    name: Can I see the Ollama Server
+    scheme: http
+    host: 10.42.0.20
+    port: 11434
+    path: /api/version
+    expect_status: 200

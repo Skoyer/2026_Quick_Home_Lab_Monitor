@@ -1,0 +1,6 @@
+# Example mapping schema. Real mappings stay in private/ip_map.yaml.
+# The left side is a stand-in for a private LAN, not a real host in this repo.
+replacements:
+  "192.168.1.10": "10.42.0.10"
+  "192.168.1.20": "10.42.0.20"
+  "192.168.1.": "10.42.0."

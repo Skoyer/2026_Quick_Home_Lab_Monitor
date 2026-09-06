@@ -1,0 +1,147 @@
+:root {
+  color-scheme: dark;
+  --bg: #10141c;
+  --panel: #1a2130;
+  --ink: #e8edf7;
+  --muted: #9aa7bd;
+  --line: #2a3548;
+  --up: #3ecf8e;
+  --degraded: #e3b341;
+  --down: #f07178;
+  --unknown: #7f8da6;
+  font-family: "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(circle at top, #1c2740 0%, var(--bg) 50%);
+  color: var(--ink);
+}
+
+.wrap {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 2.5rem 1.25rem 3rem;
+}
+
+.hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  align-items: flex-start;
+  margin-bottom: 1.75rem;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin: 0 0 0.35rem;
+}
+
+h1 {
+  margin: 0 0 0.4rem;
+  font-size: 2rem;
+}
+
+.lede,
+.meta p {
+  color: var(--muted);
+  margin: 0.2rem 0;
+}
+
+.meta {
+  text-align: right;
+}
+
+button {
+  margin-top: 0.75rem;
+  background: #2d3b55;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #374866;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 1.15rem 1.2rem 1.25rem;
+  min-height: 180px;
+}
+
+.card header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.card h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.light {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--unknown);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--unknown) 20%, transparent);
+}
+
+.card.up .light {
+  background: var(--up);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--up) 20%, transparent);
+}
+
+.card.degraded .light {
+  background: var(--degraded);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--degraded) 20%, transparent);
+}
+
+.card.down .light {
+  background: var(--down);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--down) 20%, transparent);
+}
+
+.state {
+  margin: 0.85rem 0 0.35rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.detail,
+.timing,
+.target {
+  color: var(--muted);
+  font-size: 0.92rem;
+  margin: 0.25rem 0;
+  word-break: break-word;
+}
+
+@media (max-width: 700px) {
+  .hero,
+  .meta {
+    display: block;
+    text-align: left;
+  }
+}

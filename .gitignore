@@ -1,0 +1,25 @@
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Secrets and local-only home-lab data
+.env
+.env.*
+!.env.example
+private/*
+!private/.gitkeep
+
+# Logs and local runtime
+*.log
+.DS_Store
+Thumbs.db
