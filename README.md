@@ -1,10 +1,11 @@
 # Home Lab Monitor
 
-Python dashboard that answers three questions from a browser:
+Python dashboard that answers four questions from a browser:
 
 - Can I reach the internet?
 - Can I see LM Studio?
 - Can I see the Ollama server?
+- Can I see my files on my NAS?
 
 Live addresses, passwords, and home-lab notes stay in `private/`, which
 is gitignored. `public/` holds fictitious examples for GitHub.
@@ -26,6 +27,8 @@ Copy-Item public\ip_map.example.yaml private\ip_map.yaml
 ```
 
 Put credentials only in `private/secrets.env`. That file is not uploaded.
+NAS username and password stay in the existing PowerShell SAN config;
+do not copy them into this repo.
 
 ## Run
 
@@ -33,8 +36,13 @@ Put credentials only in `private/secrets.env`. That file is not uploaded.
 .\.venv\Scripts\python run.py
 ```
 
-Open [http://127.0.0.1:8080](http://127.0.0.1:8080). The dashboard binds
-to localhost by default and has no login.
+Open [http://127.0.0.1:8000](http://127.0.0.1:8000) on this machine, or
+`http://<this-host>:8000` from another device on the LAN. Host and port
+come from `dashboard.host` / `dashboard.port` in `private/services.yaml`
+(defaults: all interfaces `0.0.0.0`, port `8000`). There is no login.
+
+On Windows, allow inbound TCP 8000 on the Private profile if phones
+cannot connect. Prefer a rule scoped to your LAN subnet.
 
 One-shot CLI check:
 

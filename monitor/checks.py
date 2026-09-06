@@ -1,11 +1,171 @@
 from __future__ import annotations
 
+import asyncio
+import os
 import time
+from pathlib import Path
 from typing import Any
 
 import httpx
 
 from monitor.config import load_services_config
+
+RECONNECT_HINT = "Reconnect with ConnectToHomeSan.ps1 or connectDrive.bat."
+
+
+def normalize_drive_path(drive: str) -> Path:
+    raw = (drive or "Z:").strip()
+    if len(raw) >= 2 and raw[1] == ":" and not raw.endswith(("\\", "/")):
+        raw = raw + "\\"
+    return Path(raw)
+
+
+def share_host(share: str | None, host: str | None = None) -> str | None:
+    if host:
+        return str(host)
+    if not share:
+        return None
+    cleaned = str(share).replace("/", "\\").strip().lstrip("\\")
+    server = cleaned.split("\\", 1)[0].strip()
+    return server or None
+
+
+def inspect_mapped_drive(drive: str) -> dict[str, Any]:
+    path = normalize_drive_path(drive)
+    path_str = str(path)
+    if not path.exists():
+        return {"ok": False, "reason": "missing", "path": path_str}
+    names = os.listdir(path)
+    return {
+        "ok": True,
+        "reason": "listed",
+        "path": path_str,
+        "count": len(names),
+    }
+
+
+async def list_mapped_drive_async(drive: str, timeout: float) -> dict[str, Any]:
+    return await asyncio.wait_for(
+        asyncio.to_thread(inspect_mapped_drive, drive),
+        timeout=timeout,
+    )
+
+
+async def probe_tcp(host: str, port: int, timeout: float) -> dict[str, Any]:
+    started = time.perf_counter()
+    try:
+        _reader, writer = await asyncio.wait_for(
+            asyncio.open_connection(host, port),
+            timeout=timeout,
+        )
+        writer.close()
+        try:
+            await asyncio.wait_for(writer.wait_closed(), timeout=1)
+        except (TimeoutError, OSError):
+            pass
+        return {
+            "ok": True,
+            "host": host,
+            "port": port,
+            "elapsed_ms": round((time.perf_counter() - started) * 1000),
+        }
+    except TimeoutError:
+        return {
+            "ok": False,
+            "host": host,
+            "port": port,
+            "elapsed_ms": round((time.perf_counter() - started) * 1000),
+            "error": "timeout",
+        }
+    except OSError as exc:
+        return {
+            "ok": False,
+            "host": host,
+            "port": port,
+            "elapsed_ms": round((time.perf_counter() - started) * 1000),
+            "error": str(exc),
+        }
+
+
+async def check_nas(config: dict[str, Any], timeout: float) -> dict[str, Any]:
+    started = time.perf_counter()
+    drive = str(config.get("drive") or "Z:")
+    share = config.get("share")
+    host = share_host(share, config.get("host"))
+    smb_port = int(config.get("smb_port") or 445)
+    nas_timeout = float(config.get("timeout_seconds") or timeout)
+    service_id = config.get("id", "nas")
+    name = config.get("name", "Can I see my files on my NAS?")
+    probes: list[dict[str, Any]] = []
+
+    listing: dict[str, Any] | None = None
+    list_error: str | None = None
+    try:
+        listing = await list_mapped_drive_async(drive, nas_timeout)
+    except TimeoutError:
+        list_error = "timeout"
+    except OSError as exc:
+        list_error = str(exc)
+
+    if listing and listing.get("ok"):
+        state = "up"
+        count = int(listing.get("count") or 0)
+        if count:
+            detail = f"{count} item(s) visible on {drive}"
+        else:
+            detail = f"Drive {drive} is readable"
+        probes.append(
+            {
+                "kind": "listdir",
+                "path": listing.get("path") or drive,
+                "ok": True,
+                "item_count": count,
+            }
+        )
+    else:
+        state = "down"
+        if list_error == "timeout":
+            detail = f"Timed out listing {drive}. The share may be hung."
+        elif listing and listing.get("reason") == "missing":
+            detail = f"Mapped drive {drive} is not available. {RECONNECT_HINT}"
+        else:
+            detail = f"Could not list {drive}. {list_error or RECONNECT_HINT}"
+        probes.append(
+            {
+                "kind": "listdir",
+                "path": (listing or {}).get("path") or drive,
+                "ok": False,
+                "error": list_error or (listing or {}).get("reason"),
+            }
+        )
+
+    if host:
+        smb = await probe_tcp(host, smb_port, min(nas_timeout, timeout))
+        probes.append(
+            {
+                "kind": "tcp",
+                "host": host,
+                "port": smb_port,
+                "ok": smb.get("ok"),
+                "elapsed_ms": smb.get("elapsed_ms"),
+                "error": smb.get("error"),
+            }
+        )
+        if smb.get("ok"):
+            detail = f"{detail}; SMB {smb_port} reachable"
+        else:
+            detail = f"{detail}; SMB {smb_port} not reachable"
+
+    return {
+        "id": service_id,
+        "name": name,
+        "state": state,
+        "ok": state != "down",
+        "elapsed_ms": round((time.perf_counter() - started) * 1000),
+        "detail": detail,
+        "target": str(normalize_drive_path(drive)),
+        "probes": probes,
+    }
 
 
 def _url(scheme: str, host: str, port: int, path: str) -> str:
@@ -142,9 +302,12 @@ async def run_all_checks() -> dict[str, Any]:
     config = load_services_config()
     dashboard = config.get("dashboard") or {}
     timeout = float(dashboard.get("timeout_seconds", 5))
-    results = []
     async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
-        results.append(await check_internet(client, config.get("internet") or {}))
+        tasks = [check_internet(client, config.get("internet") or {})]
         for service in config.get("services") or []:
-            results.append(await check_service(client, service))
-    return {"checks": results}
+            tasks.append(check_service(client, service))
+        nas = config.get("nas")
+        if nas:
+            tasks.append(check_nas(nas, timeout))
+        results = await asyncio.gather(*tasks)
+    return {"checks": list(results)}

@@ -21,5 +21,6 @@
 3. Run `python scripts/generate_public_examples.py` after changing either file.
 4. The generator refuses to write `public/` if a real mapped value is still present.
 
-Do not paste live IPs, passwords, or WAN addresses into README files or
-into anything under `public/`.
+Do not paste live IPs, passwords, share names, or WAN addresses into
+README files or into anything under `public/`. NAS credentials stay in
+the existing PowerShell SAN config, not this repository.
