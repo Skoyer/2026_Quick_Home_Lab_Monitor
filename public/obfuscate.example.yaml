@@ -8,7 +8,7 @@
 replacements:
   labshare: shared
   workstation-01: workstation
-  mcp-01: kuma-host
+  kuma-vm: kuma-host
   example-user: user
 lan_prefixes:
   - "192.168.1."

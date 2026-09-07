@@ -160,7 +160,7 @@ KUMA_CFG = {
     "scheme": "http",
     "host": "10.42.0.40",
     "port": 3001,
-    "status_page_slug": "ping-networkinfrastructure",
+    "status_page_slug": "network",
     "lm_studio_model": "llama-3.2-8b-instruct",
     "summarize_timeout_seconds": 2,
     "summary_cache_seconds": 90,
@@ -196,9 +196,9 @@ def test_fetch_prefers_status_page_over_login_hint():
         path = request.url.path
         if path.endswith("/api/entry-page"):
             return _json_response({"type": "entryPage", "entryPage": None})
-        if path.endswith("/api/status-page/ping-networkinfrastructure"):
+        if path.endswith("/api/status-page/network"):
             return _json_response(STATUS_PAGE)
-        if path.endswith("/api/status-page/heartbeat/ping-networkinfrastructure"):
+        if path.endswith("/api/status-page/heartbeat/network"):
             return _json_response(HEARTBEAT)
         if path.endswith("/metrics"):
             raise AssertionError("configured status-page slug should skip /metrics")
@@ -211,7 +211,7 @@ def test_fetch_prefers_status_page_over_login_hint():
     fetched = _run(inner())
     assert fetched["reachable"] is True
     assert fetched["source"] == "status_page"
-    assert fetched["slug"] == "ping-networkinfrastructure"
+    assert fetched["slug"] == "network"
     assert len(fetched["monitors"]) == 3
 
 
@@ -284,9 +284,9 @@ def test_llm_failure_keeps_structured_counts():
         path = request.url.path
         if path.endswith("/api/entry-page"):
             return _json_response({"type": "entryPage", "entryPage": None})
-        if path.endswith("/api/status-page/ping-networkinfrastructure"):
+        if path.endswith("/api/status-page/network"):
             return _json_response(STATUS_PAGE)
-        if path.endswith("/api/status-page/heartbeat/ping-networkinfrastructure"):
+        if path.endswith("/api/status-page/heartbeat/network"):
             return _json_response(HEARTBEAT)
         if path.endswith("/v1/models") or path.endswith("/v1/chat/completions"):
             raise httpx.ConnectError("lm studio down", request=request)

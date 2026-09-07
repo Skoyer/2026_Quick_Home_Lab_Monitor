@@ -53,10 +53,10 @@ Data path, in order:
    status page is the site entry.
 2. `GET /api/status-page/{slug}` plus `/api/status-page/heartbeat/{slug}`
    when `uptime_kuma.status_page_slug` is set (example:
-   `ping-networkinfrastructure`) or advertised. Prefer heartbeat JSON over
+   `network`) or advertised. Prefer heartbeat JSON over
    the HTML page at `/status/{slug}`. The slug is not an IP and is safe
    to document. Example public URL:
-   `http://10.42.0.40:3001/status/ping-networkinfrastructure`.
+   `http://10.42.0.40:3001/status/network`.
 3. `GET /metrics` only if **no** slug is configured. This lab does not use
    Prometheus; `KUMA_API_KEY` in `private/secrets.env` is unused when the
    status page answers.
@@ -74,7 +74,7 @@ the LLM. Reachable Kuma with no monitor payload is degraded and shows
 the login/status-page hint. If LM Studio is down, the card still shows
 structured counts/names.
 
-ICMP, history, retries, and notifications stay in Kuma (mcp-01 in the
+ICMP, history, retries, and notifications stay in Kuma (kuma-host in the
 example map). See [COMPARE_TO_UPTIME_KUMA.md](COMPARE_TO_UPTIME_KUMA.md)
 for the split and a better long-term implementation.
 
@@ -91,7 +91,7 @@ What is masked:
 
 - Private IPv4: `192.168.a.b` → `192.x.y.b` (last octet kept). Other RFC1918
   (`10.*`, `172.16–31.*`) become `10.x.y.<last>` / `172.x.y.<last>`.
-- Parenthesized LAN hints in Kuma names, e.g. `Orbi Main (55.14)` →
+- Parenthesized LAN hints in Kuma names, e.g. `Orbi Main (200.14)` →
   `Orbi Main (x.y.14)` (scheme: hide the third octet, keep the host’s last octet).
 - UNC/SMB share names (`\\192.x.y.250\share`). Drive letter `Z:` stays.
 - Inventory hostnames and usernames listed in `private/obfuscate.yaml`.

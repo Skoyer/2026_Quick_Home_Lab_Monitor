@@ -7,7 +7,7 @@ Public fictitious examples used here (never treat these as live hosts):
 - LM Studio: `10.42.0.10:1234`
 - Ollama: `10.42.0.20:11434`
 - NAS: `10.42.0.30` share `\\10.42.0.30\shared`, mapped as `Z:`
-- Uptime Kuma (mcp-01): `10.42.0.40:3001`
+- Uptime Kuma (kuma-host): `10.42.0.40:3001`
 - Dashboard bind: `0.0.0.0:8000` (open locally at `http://127.0.0.1:8000`)
 
 ---
@@ -106,7 +106,7 @@ State machine:
 **How it is checked:**
 
 1. `GET /api/entry-page` (reachability; also reads a default status-page slug if Kuma advertises one).
-2. `GET /api/status-page/{slug}` and `GET /api/status-page/heartbeat/{slug}` when `uptime_kuma.status_page_slug` is set (example slug: `ping-networkinfrastructure`) or entry-page provides a slug. Prefer this JSON over the HTML status page. A public slug is not an IP and is fine to mention in docs.
+2. `GET /api/status-page/{slug}` and `GET /api/status-page/heartbeat/{slug}` when `uptime_kuma.status_page_slug` is set (example slug: `network`) or entry-page provides a slug. Prefer this JSON over the HTML status page. A public slug is not an IP and is fine to mention in docs.
 3. Else, only if no slug is configured, `GET /metrics` with optional `KUMA_API_KEY` from `private/secrets.env`. This lab’s Kuma install does not use Prometheus; the published status page is the ingest path.
 4. Build a compact snapshot: names, up/down counts, uptime %, tags (especially Critical). Status-page JSON is the source of 24h uptime; enable **Show Tags** on the Kuma status page if Critical tags should affect this card.
 5. If Kuma is reachable, `POST` that snapshot to LM Studio `/v1/chat/completions` (OpenAI-compatible, same host as the LM Studio card). Model is `uptime_kuma.lm_studio_model` if it appears in `GET /v1/models`, otherwise the first non-embedding model. Chat timeout is `summarize_timeout_seconds` (example **8s**) so a hung LLM does not stall other cards. Summaries are reused for `summary_cache_seconds` (example **90s**) while the monitor set and up/down set stay the same; counts are always from the latest snapshot.
@@ -128,7 +128,7 @@ Not a general SaaS uptime platform and **not a Kuma replacement**. Extra YAML HT
 
 ## This lab also runs Uptime Kuma
 
-The same home lab now runs **Uptime Kuma** on host **mcp-01** (public example: `10.42.0.40:3001`) with **embedded MariaDB** on that VM. MariaDB credentials are not stored in this repository.
+The same home lab now runs **Uptime Kuma** on host **kuma-host** (public example: `10.42.0.40:3001`) with **embedded MariaDB** on that VM. MariaDB credentials are not stored in this repository.
 
 Near-term Kuma plan: the first monitor is an **ICMP ping to the LAN gateway**. This Python app explicitly does not use ICMP for internet (or gateway) reachability; that is Kuma’s job.
 
@@ -141,7 +141,7 @@ Use both tools. Grow this dashboard where the question is human-facing “can I 
 Durable split for this lab. Prefer one owner per question; add the other tool only when the question itself is different.
 
 1. **This dashboard** — operator “can I see X?” checks that stock Kuma HTTP/ICMP cannot express well: LM Studio `GET /v1/models` (model list), Ollama `GET /api/version`, NAS **mapped drive listing** on Windows (`Z:`), a **Kuma status snapshot + LM Studio summary**, future app-semantic cards (for example “are the VMs I care about running?” via a Proxmox API), and the GitHub-safe private/public IP-masking workflow.
-2. **Uptime Kuma** (mcp-01, MariaDB-backed history) — source of truth for ICMP, history, retries, notifications, and many devices. Gateway ping, Orbi/router IPs, Proxmox `:8006` reachability, lots of VMs/LXCs/switches/printers (inventory + tags), uptime-percentage graphs, and alerting (email, Discord, and so on).
+2. **Uptime Kuma** (kuma-host, MariaDB-backed history) — source of truth for ICMP, history, retries, notifications, and many devices. Gateway ping, Orbi/router IPs, Proxmox `:8006` reachability, lots of VMs/LXCs/switches/printers (inventory + tags), uptime-percentage graphs, and alerting (email, Discord, and so on).
 3. **Orbi / wireless** — Kuma first: ICMP to the LAN gateway and Orbi router/AP IPs. Optional HTTP to the admin UI is usually auth-walled and a weak uptime signal. Mesh satellites are better as ping plus “can clients reach the gateway.” Do not scrape the Orbi admin UI from this Python app unless that is asked for later. Phone-to-dashboard already depends on LAN plus firewall TCP 8000.
 4. **Proxmox** — Kuma: ping the node, HTTPS to the web UI (`:8006`), maybe guest pings. This dashboard (optional later): one card “Can I see Proxmox?” via API `/version` or cluster/nodes status using a **read-only token** stored only in `private/secrets.env` — only if that yes/no belongs next to LM Studio. Do not put `root@pam` passwords in either tool’s git repo. Proxmox-native node status (and optional Influx/Prometheus) is complementary, not required. Do not implement a Proxmox API monitor until a token exists. Do not fold Proxmox into the LM Studio Kuma summary until those Kuma monitors exist.
 5. **Use both** when the same box has two questions: “is the host/port up over time, and should someone be notified?” (Kuma) versus “can I do the thing I care about right now?” (this dashboard). Example: Kuma pings the NAS and graphs downtime; this app lists `Z:` because “TCP 445 open” is not “I can see files.” Kuma owns ICMP heartbeats; this app reads Kuma’s structured status and summarizes it.
@@ -190,7 +190,7 @@ Keep the split. Do not grow this dashboard into a second heartbeat UI.
 
 - **Kuma** remains source of truth for ICMP (gateway, Orbi Main, satellites) plus history and Critical tags.
 - **This dashboard** should ingest Kuma’s **structured status** and optionally **summarize with LM Studio**. It should not clone Kuma’s heartbeat timeline.
-- Better than scraping HTML: publish a Kuma **public status page** and poll `/api/status-page/{slug}` plus `/api/status-page/heartbeat/{slug}`. Example: `http://10.42.0.40:3001/status/ping-networkinfrastructure` (slug `ping-networkinfrastructure`). A screenshot / vision OCR pipeline is a worse alternative. Prometheus `/metrics` is an optional fallback only when no slug is configured.
+- Better than scraping HTML: publish a Kuma **public status page** and poll `/api/status-page/{slug}` plus `/api/status-page/heartbeat/{slug}`. Example: `http://10.42.0.40:3001/status/network` (slug `network`). A screenshot / vision OCR pipeline is a worse alternative. Prometheus `/metrics` is an optional fallback only when no slug is configured.
 - Better than calling an LLM every refresh: keep raw counts always fresh; cache the summary (60–120s) and only re-summarize when the monitor set or up/down set changes. (This repo already skips a new chat when the fingerprint is unchanged inside `summary_cache_seconds`.)
 - Better than “is :3001 up”: alert on **Critical tag Down**, not on Kuma process reachability. Kuma reachability can stay as a Kuma monitor on another node later.
 - Interpret short-window uptime carefully. A currently Up monitor with low percentage (for example Orbi Main at 14%) is often a short history or a monitor added after an outage, not “the Orbi is 86% broken.”
@@ -238,7 +238,7 @@ After editing private files: `python scripts/generate_public_examples.py` rewrit
 
 ## Privacy design (why this exists vs a GitHub-visible Kuma config)
 
-Kuma typically stores monitor URLs (LAN IPs, share paths, hostnames) in its own data directory, compose volume, or embedded MariaDB (mcp-01 in this lab). If that config or a Kuma backup is copied into a public git repo, real home-lab addresses leak. Keep Kuma’s database on mcp-01; do not commit exports.
+Kuma typically stores monitor URLs (LAN IPs, share paths, hostnames) in its own data directory, compose volume, or embedded MariaDB (kuma-host in this lab). If that config or a Kuma backup is copied into a public git repo, real home-lab addresses leak. Keep Kuma’s database on kuma-host; do not commit exports.
 
 This project splits:
 

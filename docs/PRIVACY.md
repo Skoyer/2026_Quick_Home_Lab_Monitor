@@ -13,7 +13,7 @@
 - `public/` — fictitious examples generated from the private map
 - `docs/` — how the monitors work, without live addresses
 - application source, `requirements.txt`, `.env.example`
-- tests that feed example RFC1918 addresses **into** the screenshot sanitizer
+- tests that feed fictitious RFC1918 addresses **into** the screenshot sanitizer (never a live `/24`)
 
 ## Masking workflow (GitHub tree)
 
@@ -37,7 +37,7 @@ Masked in the JSON and therefore in the UI:
 - Windows UNC and SMB share names (drive letter `Z:` stays)
 - Inventory hostnames and usernames from `private/obfuscate.yaml` and
   non-IP keys in `private/ip_map.yaml`
-- Kuma monitor LAN hints: `Orbi Main (55.14)` → `Orbi Main (x.y.14)`
+- Kuma monitor LAN hints: `Orbi Main (200.14)` → `Orbi Main (x.y.14)`
 - `detail`, LM Studio `summary`, probe URLs, and monitor names
 
 Not masked (needed for the screenshot to make sense):
@@ -48,6 +48,5 @@ Not masked (needed for the screenshot to make sense):
 
 Do not paste live IPs, passwords, share names, or WAN addresses into
 README files or into anything under `public/`. NAS credentials stay in
-the existing PowerShell SAN config, not this repository. A Kuma public
-status-page slug such as `ping-networkinfrastructure` is not an IP and
-is safe to mention in docs.
+the existing PowerShell SAN config, not this repository. Public docs use
+the example Kuma slug `network`, not a live status-page name.

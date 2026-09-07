@@ -5,15 +5,15 @@ from fastapi.testclient import TestClient
 from monitor.obfuscate import obfuscate_payload, obfuscate_text, request_wants_obfuscate
 
 
-# Documented sanitizer *input* only (not live inventory in app source).
-EXAMPLE_LAN = "192.168.55."
-LM_STUDIO = "192.168.55.10"
-OLLAMA = "192.168.55.87"
-KUMA = "192.168.55.51"
-NAS = "192.168.55.250"
-SHARE = "homevtshare"
-HOST_A = "mcp-01"
-HOST_B = "TimDesktop25"
+# Fictitious sanitizer *input* only. Do not use a live home-lab prefix here.
+EXAMPLE_LAN = "192.168.200."
+LM_STUDIO = "192.168.200.10"
+OLLAMA = "192.168.200.20"
+KUMA = "192.168.200.40"
+NAS = "192.168.200.30"
+SHARE = "labshare"
+HOST_A = "kuma-vm"
+HOST_B = "workstation-01"
 NAS_UNC = "\\\\" + NAS + "\\" + SHARE
 
 EXTRAS = {
@@ -67,12 +67,12 @@ FAKE_PAYLOAD = {
             "detail": "4 up / 0 down",
             "target": f"http://{KUMA}:3001",
             "summary": (
-                f"Orbi Main (55.14) is up. {HOST_B} can list {NAS_UNC}. "
+                f"Orbi Main (200.14) is up. {HOST_B} can list {NAS_UNC}. "
                 f"{HOST_A} looks healthy. user=labuser connected to {LM_STUDIO}."
             ),
             "monitors": [
                 {
-                    "name": "Orbi Main (55.14)",
+                    "name": "Orbi Main (200.14)",
                     "status": "up",
                     "uptime": "14%",
                     "ping_ms": 5,
@@ -80,7 +80,7 @@ FAKE_PAYLOAD = {
                 }
             ],
             "counts": {"up": 4, "down": 0},
-            "probes": [{"url": f"http://{KUMA}:3001/api/status-page/ping-networkinfrastructure"}],
+            "probes": [{"url": f"http://{KUMA}:3001/api/status-page/network"}],
         },
     ],
     "refresh_seconds": 10,
@@ -105,11 +105,11 @@ def test_obfuscate_rewrites_lan_and_not_public_examples():
     assert HOST_A not in blob
     assert HOST_B not in blob
     assert "labuser" not in blob
-    assert "55.14" not in blob
+    assert "200.14" not in blob
     assert "192.x.y.10" in blob
-    assert "192.x.y.87" in blob
-    assert "192.x.y.51" in blob
-    assert "192.x.y.250" in blob
+    assert "192.x.y.20" in blob
+    assert "192.x.y.40" in blob
+    assert "192.x.y.30" in blob
     assert "llama-3.2-8b-instruct" in blob
     assert "https://www.google.com/generate_204" in blob
     assert "https://1.1.1.1/cdn-cgi/trace" in blob
@@ -119,7 +119,7 @@ def test_obfuscate_rewrites_lan_and_not_public_examples():
     assert masked["obfuscated"] is True
     nas = next(item for item in masked["checks"] if item["id"] == "nas")
     assert nas["target"] == "Z:\\"
-    assert "192.x.y.250" in nas["detail"]
+    assert "192.x.y.30" in nas["detail"]
     assert SHARE not in nas["detail"]
     assert "shared" in nas["detail"] or "\\share" in nas["detail"]
     kuma = next(item for item in masked["checks"] if item["id"] == "uptime_kuma")
@@ -132,7 +132,7 @@ def test_obfuscate_rewrites_lan_and_not_public_examples():
 
 def test_obfuscate_other_rfc1918_and_unc_without_extras():
     text = "probe 10.9.8.7 and 172.16.4.9 plus " + "\\\\" + NAS + "\\" + SHARE
-    masked = obfuscate_text(text, extras={}, lan_thirds={"55"}, lan_prefixes=[EXAMPLE_LAN])
+    masked = obfuscate_text(text, extras={}, lan_thirds={"200"}, lan_prefixes=[EXAMPLE_LAN])
     assert "10.9.8.7" not in masked
     assert "172.16.4.9" not in masked
     assert "10.x.y.7" in masked

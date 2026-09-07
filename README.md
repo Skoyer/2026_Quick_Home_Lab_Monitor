@@ -38,7 +38,7 @@ Copy-Item public\obfuscate.example.yaml private\obfuscate.yaml
 Put credentials only in `private/secrets.env`. That file is not uploaded.
 NAS username and password stay in the existing PowerShell SAN config;
 do not copy them into this repo. Kuma ingest uses a public status-page
-slug (`ping-networkinfrastructure` in the example map). Optional
+slug (`network` in the example map). Optional
 `KUMA_API_KEY` is only for a Prometheus `/metrics` fallback when no slug
 is set — never invent or commit a real key.
 
