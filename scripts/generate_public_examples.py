@@ -42,7 +42,7 @@ EXAMPLE_OBFUSCATE = """# Example extra replacements for screenshot Obfuscate mod
 replacements:
   labshare: shared
   workstation-01: workstation
-  kuma-host: kuma-host
+  kuma-vm: kuma-host
   example-user: user
 lan_prefixes:
   - "192.168.1."

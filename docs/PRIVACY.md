@@ -13,7 +13,7 @@
 - `public/` — fictitious examples generated from the private map
 - `docs/` — how the monitors work, without live addresses
 - application source, `requirements.txt`, `.env.example`
-- tests that feed example RFC1918 addresses **into** the screenshot sanitizer
+- tests that feed fictitious RFC1918 addresses **into** the screenshot sanitizer (never a live `/24`)
 
 ## Masking workflow (GitHub tree)
 
@@ -48,6 +48,5 @@ Not masked (needed for the screenshot to make sense):
 
 Do not paste live IPs, passwords, share names, or WAN addresses into
 README files or into anything under `public/`. NAS credentials stay in
-the existing PowerShell SAN config, not this repository. A Kuma public
-status-page slug such as `network` is not an IP and
-is safe to mention in docs.
+the existing PowerShell SAN config, not this repository. Public docs use
+the example Kuma slug `network`, not a live status-page name.
