@@ -20,6 +20,7 @@ private/*
 !private/.gitkeep
 
 # Logs and local runtime
+logs/
 *.log
 .DS_Store
 Thumbs.db
