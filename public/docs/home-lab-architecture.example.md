@@ -14,7 +14,19 @@ passwords, and inventory live only in the local `private/` folder.
 | --- | --- | --- |
 | LM Studio | `http://10.42.0.10:1234` | `GET /v1/models` |
 | Ollama | `http://10.42.0.20:11434` | `GET /api/version` |
+| Uptime Kuma (kuma-host) | `http://10.42.0.40:3001` | Public status page `network` (heartbeat JSON), then LM Studio summary |
 | NAS files | `Z:` → `\\10.42.0.30\shared` | Mapped drive listing |
+
+## Uptime Kuma (also in this lab)
+
+The example lab also runs Uptime Kuma on **kuma-host** with embedded
+MariaDB. This dashboard does not clone Kuma's heartbeat UI. It ingests
+structured Kuma status from the published status page
+`http://10.42.0.40:3001/status/network` (slug
+`network` is not an IP) and optionally asks LM Studio
+to summarize it. Prometheus `/metrics` is not required. ICMP (gateway,
+Orbi Main, Orbi satellites), history, Critical tags, retries, and
+notifications stay in Kuma. See `docs/COMPARE_TO_UPTIME_KUMA.md`.
 
 ## Internet reachability
 

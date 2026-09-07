@@ -9,6 +9,7 @@ from typing import Any
 import httpx
 
 from monitor.config import load_services_config
+from monitor.kuma import check_uptime_kuma
 
 RECONNECT_HINT = "Reconnect with ConnectToHomeSan.ps1 or connectDrive.bat."
 
@@ -304,8 +305,15 @@ async def run_all_checks() -> dict[str, Any]:
     timeout = float(dashboard.get("timeout_seconds", 5))
     async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
         tasks = [check_internet(client, config.get("internet") or {})]
+        legacy_kuma = None
         for service in config.get("services") or []:
+            if service.get("id") == "uptime_kuma":
+                legacy_kuma = service
+                continue
             tasks.append(check_service(client, service))
+        kuma = config.get("uptime_kuma") or legacy_kuma
+        if kuma:
+            tasks.append(check_uptime_kuma(client, kuma, config, timeout))
         nas = config.get("nas")
         if nas:
             tasks.append(check_nas(nas, timeout))
