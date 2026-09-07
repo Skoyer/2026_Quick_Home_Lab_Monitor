@@ -1,0 +1,14 @@
+# Example extra replacements for screenshot Obfuscate mode.
+# Copy to private/obfuscate.yaml and add real share names / hostnames / usernames.
+# RFC1918 IPv4 addresses are rewritten automatically:
+#   192.168.a.b → 192.x.y.b  (last octet kept so hosts stay distinct in screenshots)
+#   10.a.b.c    → 10.x.y.c
+#   172.16–31   → 172.x.y.<last>
+# Do not put live inventory here. Screenshot mode does not use the 10.42.0.x GitHub map.
+replacements:
+  labshare: shared
+  workstation-01: workstation
+  mcp-01: kuma-host
+  example-user: user
+lan_prefixes:
+  - "192.168.1."

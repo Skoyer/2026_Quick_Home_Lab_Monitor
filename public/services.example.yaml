@@ -33,6 +33,24 @@ services:
     path: /api/version
     expect_status: 200
 
+# Structured Kuma status + LM Studio summary (not a GET / UI probe).
+# Card is up when Kuma data was retrieved and no Critical monitor is currently Down.
+# Low historical uptime on an Up monitor does not mark this card Down.
+# Primary ingest: public status-page JSON (not HTML, not Prometheus).
+uptime_kuma:
+  id: uptime_kuma
+  name: What is Uptime Kuma reporting?
+  scheme: http
+  host: 10.42.0.40
+  port: 3001
+  # Public status page: http://10.42.0.40:3001/status/ping-networkinfrastructure
+  # Slug is not an IP; enable Show Tags on that page if Critical tags should affect this card.
+  status_page_slug: ping-networkinfrastructure
+  lm_studio_model: llama-3.2-8b-instruct
+  summarize_timeout_seconds: 8
+  summary_cache_seconds: 90
+  timeout_seconds: 5
+
 nas:
   id: nas
   name: Can I see my files on my NAS?

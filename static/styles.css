@@ -73,6 +73,39 @@ button:hover {
   background: #374866;
 }
 
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 0.75rem;
+}
+
+.actions button {
+  margin-top: 0;
+}
+
+#obfuscate[aria-pressed="true"] {
+  background: #5b3d12;
+  border-color: #e3b341;
+  color: #ffe7a3;
+}
+
+.obfuscate-banner {
+  margin: 0 0 1.25rem;
+  padding: 0.7rem 1rem;
+  border-radius: 12px;
+  border: 1px solid #e3b341;
+  background: color-mix(in srgb, #e3b341 16%, var(--panel));
+  color: #ffe7a3;
+  font-size: 0.95rem;
+}
+
+body.obfuscate-on {
+  outline: 3px solid color-mix(in srgb, #e3b341 55%, transparent);
+  outline-offset: -3px;
+}
+
 .cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -129,13 +162,25 @@ button:hover {
   text-transform: capitalize;
 }
 
+.card.wide {
+  grid-column: 1 / -1;
+}
+
 .detail,
 .timing,
-.target {
+.target,
+.summary {
   color: var(--muted);
   font-size: 0.92rem;
   margin: 0.25rem 0;
   word-break: break-word;
+}
+
+.summary {
+  color: var(--ink);
+  white-space: pre-wrap;
+  line-height: 1.45;
+  margin-top: 0.55rem;
 }
 
 @media (max-width: 700px) {
@@ -143,5 +188,9 @@ button:hover {
   .meta {
     display: block;
     text-align: left;
+  }
+
+  .actions {
+    justify-content: flex-start;
   }
 }

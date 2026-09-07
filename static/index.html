@@ -12,14 +12,20 @@
         <div>
           <p class="eyebrow">Local network</p>
           <h1>Home Lab Monitor</h1>
-          <p class="lede">Reachability checks for the internet, local AI services, and NAS files.</p>
+          <p class="lede">Reachability checks for the internet, local AI services, and NAS files, plus a Kuma status summary.</p>
         </div>
         <div class="meta">
           <p id="checked-at">Waiting for first check…</p>
           <p id="config-source"></p>
-          <button id="refresh" type="button">Check now</button>
+          <div class="actions">
+            <button id="refresh" type="button">Check now</button>
+            <button id="obfuscate" type="button" aria-pressed="false">Obfuscate</button>
+          </div>
         </div>
       </header>
+      <div id="obfuscate-banner" class="obfuscate-banner" hidden>
+        Obfuscate is ON. Addresses such as 192.x.y.10 are masked for screenshots — they are not real LAN IPs.
+      </div>
       <section id="cards" class="cards" aria-live="polite"></section>
     </main>
     <script src="/static/app.js"></script>

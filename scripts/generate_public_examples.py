@@ -19,6 +19,7 @@ from monitor.sanitize import apply_replacements, leftover_real_values  # noqa: E
 
 PUBLIC_SERVICES = PUBLIC_DIR / "services.example.yaml"
 PUBLIC_IP_MAP = PUBLIC_DIR / "ip_map.example.yaml"
+PUBLIC_OBFUSCATE = PUBLIC_DIR / "obfuscate.example.yaml"
 PUBLIC_ARCH = PUBLIC_DIR / "docs" / "home-lab-architecture.example.md"
 
 EXAMPLE_IP_MAP = """# Example mapping schema. Real mappings stay in private/ip_map.yaml.
@@ -27,7 +28,24 @@ replacements:
   "192.168.1.10": "10.42.0.10"
   "192.168.1.20": "10.42.0.20"
   "192.168.1.30": "10.42.0.30"
+  "192.168.1.40": "10.42.0.40"
   "192.168.1.": "10.42.0."
+"""
+
+EXAMPLE_OBFUSCATE = """# Example extra replacements for screenshot Obfuscate mode.
+# Copy to private/obfuscate.yaml and add real share names / hostnames / usernames.
+# RFC1918 IPv4 addresses are rewritten automatically:
+#   192.168.a.b → 192.x.y.b  (last octet kept so hosts stay distinct in screenshots)
+#   10.a.b.c    → 10.x.y.c
+#   172.16–31   → 172.x.y.<last>
+# Do not put live inventory here. Screenshot mode does not use the 10.42.0.x GitHub map.
+replacements:
+  labshare: shared
+  workstation-01: workstation
+  mcp-01: kuma-host
+  example-user: user
+lan_prefixes:
+  - "192.168.1."
 """
 
 EXAMPLE_ARCH = """# Example home lab architecture (public)
@@ -46,7 +64,19 @@ passwords, and inventory live only in the local `private/` folder.
 | --- | --- | --- |
 | LM Studio | `http://10.42.0.10:1234` | `GET /v1/models` |
 | Ollama | `http://10.42.0.20:11434` | `GET /api/version` |
+| Uptime Kuma (mcp-01) | `http://10.42.0.40:3001` | Public status page `ping-networkinfrastructure` (heartbeat JSON), then LM Studio summary |
 | NAS files | `Z:` → `\\\\10.42.0.30\\shared` | Mapped drive listing |
+
+## Uptime Kuma (also in this lab)
+
+The example lab also runs Uptime Kuma on **mcp-01** with embedded
+MariaDB. This dashboard does not clone Kuma's heartbeat UI. It ingests
+structured Kuma status from the published status page
+`http://10.42.0.40:3001/status/ping-networkinfrastructure` (slug
+`ping-networkinfrastructure` is not an IP) and optionally asks LM Studio
+to summarize it. Prometheus `/metrics` is not required. ICMP (gateway,
+Orbi Main, Orbi satellites), history, Critical tags, retries, and
+notifications stay in Kuma. See `docs/COMPARE_TO_UPTIME_KUMA.md`.
 
 ## Internet reachability
 
@@ -89,6 +119,7 @@ def main() -> int:
 
     write_text(PUBLIC_SERVICES, masked_services)
     write_text(PUBLIC_IP_MAP, EXAMPLE_IP_MAP)
+    write_text(PUBLIC_OBFUSCATE, EXAMPLE_OBFUSCATE)
     write_text(PUBLIC_ARCH, EXAMPLE_ARCH)
 
     private_docs = PRIVATE_DIR / "docs"
@@ -101,6 +132,7 @@ def main() -> int:
 
     print(f"Wrote {PUBLIC_SERVICES.relative_to(ROOT)}")
     print(f"Wrote {PUBLIC_IP_MAP.relative_to(ROOT)}")
+    print(f"Wrote {PUBLIC_OBFUSCATE.relative_to(ROOT)}")
     print(f"Wrote {PUBLIC_ARCH.relative_to(ROOT)}")
     return 0
 
