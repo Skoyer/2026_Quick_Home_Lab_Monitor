@@ -62,6 +62,19 @@ One-shot CLI check:
 .\.venv\Scripts\python scripts\verify_endpoints.py
 ```
 
+## Start at login (Windows)
+
+Copy `scripts/startHomeLabMonitor.bat` to `C:\scripts`. That wrapper
+points at `scripts/Start-HomeLabMonitor.ps1` in this repo. It starts the
+venv `python.exe` with `run.py` only when TCP 8000 is free. If this
+dashboard is already listening, it prints a message and exits 0. If
+another process owns 8000, it warns and exits non-zero.
+
+Optional: Task Scheduler at logon, or the Startup folder, can run
+`C:\scripts\startHomeLabMonitor.bat`. Open
+[http://127.0.0.1:8000](http://127.0.0.1:8000) on this PC, or port 8000
+on this machine’s LAN IP from another device.
+
 ## Public examples
 
 After you change the private service list or IP map:
