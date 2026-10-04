@@ -106,15 +106,23 @@ in `private/obfuscate.yaml` (example: `public/obfuscate.example.yaml`).
 
 ## Can I see my files on my NAS?
 
-Primary check: the configured mapped drive (typically `Z:`) exists and
-a directory listing succeeds. That is “I can see files.” An empty but
-readable drive still counts as up. A missing, denied, or hung listing
-is down.
+Primary check: a configured filesystem path exists and a directory
+listing succeeds. That is “I can see files.” An empty but readable
+path still counts as up. A missing, denied, or hung listing is down.
 
-If the drive is missing, the card tells you to reconnect with
-`ConnectToHomeSan.ps1` or `connectDrive.bat`. The dashboard does **not**
-run `net use` and does **not** load NAS credentials. Those stay in the
-existing PowerShell SAN config, not this repository.
+Path selection:
+
+- **Windows workstation:** `nas.drive` (typically `Z:`), a mapped
+  drive. If missing, the card tells you to reconnect with
+  `ConnectToHomeSan.ps1` or `connectDrive.bat`.
+- **Ubuntu/Docker (kuma-host):** `nas.path` (for example `/mnt/nas`), a
+  host-mounted network share bind-mounted into the container. There is
+  no `Z:` drive in that environment. Prefer `path` when both are set.
+
+The dashboard does **not** run `net use`, does **not** mount CIFS
+itself, and does **not** load NAS credentials. Credentials stay in the
+existing PowerShell SAN config (Windows) or the host’s CIFS/NFS mount
+(Ubuntu), not this repository.
 
 An optional TCP probe to SMB (port 445) can appear as extra detail when
 a share host is configured. It does not decide the overall status.
