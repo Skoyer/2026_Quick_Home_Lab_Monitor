@@ -11,14 +11,55 @@ import httpx
 from monitor.config import load_services_config
 from monitor.kuma import check_uptime_kuma
 
-RECONNECT_HINT = "Reconnect with ConnectToHomeSan.ps1 or connectDrive.bat."
+WINDOWS_RECONNECT_HINT = "Reconnect with ConnectToHomeSan.ps1 or connectDrive.bat."
+LINUX_RECONNECT_HINT = (
+    "Remount the NAS share on the host and ensure it is bind-mounted into the container."
+)
 
 
-def normalize_drive_path(drive: str) -> Path:
-    raw = (drive or "Z:").strip()
-    if len(raw) >= 2 and raw[1] == ":" and not raw.endswith(("\\", "/")):
-        raw = raw + "\\"
-    return Path(raw)
+def is_windows_drive(raw: str) -> bool:
+    value = (raw or "").strip()
+    return len(value) >= 2 and value[1] == ":" and value[0].isalpha()
+
+
+def format_list_path(raw: str) -> str:
+    """Stable display path: Windows drive letters get a trailing slash; POSIX stays as written."""
+    value = (raw or "Z:").strip()
+    if is_windows_drive(value):
+        if not value.endswith(("\\", "/")):
+            value = value + "\\"
+        return value
+    return value
+
+
+def normalize_list_path(raw: str) -> Path:
+    """Path object for os.listdir. POSIX paths keep forward slashes when possible."""
+    display = format_list_path(raw)
+    if display.startswith("/") and not is_windows_drive(display):
+        # Avoid Path("/mnt/nas") → "\\mnt\\nas" on Windows when only formatting matters.
+        return Path(display)
+    return Path(display)
+
+
+def nas_list_target(config: dict[str, Any]) -> tuple[str, str]:
+    """
+    Return (label, path) for the NAS listing check.
+
+    Prefer nas.path (Ubuntu/Docker network or bind-mount path). Fall back to
+    nas.drive for the Windows mapped-drive workflow on the workstation.
+    """
+    path_value = config.get("path")
+    if path_value:
+        label = str(path_value).strip()
+        return label, label
+    drive = str(config.get("drive") or "Z:").strip() or "Z:"
+    return drive, drive
+
+
+def reconnect_hint_for(target: str) -> str:
+    if is_windows_drive(target):
+        return WINDOWS_RECONNECT_HINT
+    return LINUX_RECONNECT_HINT
 
 
 def share_host(share: str | None, host: str | None = None) -> str | None:
@@ -31,25 +72,31 @@ def share_host(share: str | None, host: str | None = None) -> str | None:
     return server or None
 
 
-def inspect_mapped_drive(drive: str) -> dict[str, Any]:
-    path = normalize_drive_path(drive)
-    path_str = str(path)
+def inspect_list_path(raw: str) -> dict[str, Any]:
+    display = format_list_path(raw)
+    path = Path(display)
     if not path.exists():
-        return {"ok": False, "reason": "missing", "path": path_str}
+        return {"ok": False, "reason": "missing", "path": display}
     names = os.listdir(path)
     return {
         "ok": True,
         "reason": "listed",
-        "path": path_str,
+        "path": display,
         "count": len(names),
     }
 
 
-async def list_mapped_drive_async(drive: str, timeout: float) -> dict[str, Any]:
+async def list_path_async(raw: str, timeout: float) -> dict[str, Any]:
     return await asyncio.wait_for(
-        asyncio.to_thread(inspect_mapped_drive, drive),
+        asyncio.to_thread(inspect_list_path, raw),
         timeout=timeout,
     )
+
+
+# Backward-compatible aliases used by older tests/callers.
+normalize_drive_path = normalize_list_path
+inspect_mapped_drive = inspect_list_path
+list_mapped_drive_async = list_path_async
 
 
 async def probe_tcp(host: str, port: int, timeout: float) -> dict[str, Any]:
@@ -90,19 +137,21 @@ async def probe_tcp(host: str, port: int, timeout: float) -> dict[str, Any]:
 
 async def check_nas(config: dict[str, Any], timeout: float) -> dict[str, Any]:
     started = time.perf_counter()
-    drive = str(config.get("drive") or "Z:")
+    label, list_raw = nas_list_target(config)
     share = config.get("share")
     host = share_host(share, config.get("host"))
     smb_port = int(config.get("smb_port") or 445)
     nas_timeout = float(config.get("timeout_seconds") or timeout)
     service_id = config.get("id", "nas")
     name = config.get("name", "Can I see my files on my NAS?")
+    hint = reconnect_hint_for(label)
+    windows_drive = is_windows_drive(label)
     probes: list[dict[str, Any]] = []
 
     listing: dict[str, Any] | None = None
     list_error: str | None = None
     try:
-        listing = await list_mapped_drive_async(drive, nas_timeout)
+        listing = await list_path_async(list_raw, nas_timeout)
     except TimeoutError:
         list_error = "timeout"
     except OSError as exc:
@@ -112,13 +161,15 @@ async def check_nas(config: dict[str, Any], timeout: float) -> dict[str, Any]:
         state = "up"
         count = int(listing.get("count") or 0)
         if count:
-            detail = f"{count} item(s) visible on {drive}"
+            detail = f"{count} item(s) visible on {label}"
+        elif windows_drive:
+            detail = f"Drive {label} is readable"
         else:
-            detail = f"Drive {drive} is readable"
+            detail = f"Path {label} is readable"
         probes.append(
             {
                 "kind": "listdir",
-                "path": listing.get("path") or drive,
+                "path": listing.get("path") or label,
                 "ok": True,
                 "item_count": count,
             }
@@ -126,15 +177,18 @@ async def check_nas(config: dict[str, Any], timeout: float) -> dict[str, Any]:
     else:
         state = "down"
         if list_error == "timeout":
-            detail = f"Timed out listing {drive}. The share may be hung."
+            detail = f"Timed out listing {label}. The share may be hung."
         elif listing and listing.get("reason") == "missing":
-            detail = f"Mapped drive {drive} is not available. {RECONNECT_HINT}"
+            if windows_drive:
+                detail = f"Mapped drive {label} is not available. {hint}"
+            else:
+                detail = f"NAS path {label} is not available. {hint}"
         else:
-            detail = f"Could not list {drive}. {list_error or RECONNECT_HINT}"
+            detail = f"Could not list {label}. {list_error or hint}"
         probes.append(
             {
                 "kind": "listdir",
-                "path": (listing or {}).get("path") or drive,
+                "path": (listing or {}).get("path") or label,
                 "ok": False,
                 "error": list_error or (listing or {}).get("reason"),
             }
@@ -164,7 +218,7 @@ async def check_nas(config: dict[str, Any], timeout: float) -> dict[str, Any]:
         "ok": state != "down",
         "elapsed_ms": round((time.perf_counter() - started) * 1000),
         "detail": detail,
-        "target": str(normalize_drive_path(drive)),
+        "target": format_list_path(list_raw),
         "probes": probes,
     }
 

@@ -10,13 +10,20 @@ browser:
 - Can I see my files on my NAS?
 
 It is not a replacement for Uptime Kuma. Use both: this app for
-app-semantic checks (model list, mapped `Z:` listing) and for a
+app-semantic checks (model list, NAS path listing) and for a
 structured Kuma snapshot plus optional LM Studio summary; Kuma for
 ICMP, history, retries, Critical tags, and notifications. See
 [docs/COMPARE_TO_UPTIME_KUMA.md](docs/COMPARE_TO_UPTIME_KUMA.md).
 
 Live addresses, passwords, and home-lab notes stay in `private/`, which
 is gitignored. `public/` holds fictitious examples for GitHub.
+
+Two supported runtimes:
+
+| Host | How it runs | NAS listing |
+| --- | --- | --- |
+| **Windows workstation** | Local `.venv` + `run.py` (unchanged) | Mapped drive `Z:` via `nas.drive` |
+| **Ubuntu 24.04 Docker host** (kuma-host) | Docker Compose at `/opt/homelab/home-dashboard` | Bind-mounted network path via `nas.path` (no `Z:`) |
 
 ## Setup (Windows)
 
@@ -42,7 +49,7 @@ slug (`network` in the example map). Optional
 `KUMA_API_KEY` is only for a Prometheus `/metrics` fallback when no slug
 is set — never invent or commit a real key.
 
-## Run
+## Run (Windows)
 
 ```powershell
 .\.venv\Scripts\python run.py
@@ -74,6 +81,52 @@ Optional: Task Scheduler at logon, or the Startup folder, can run
 `C:\scripts\startHomeLabMonitor.bat`. Open
 [http://127.0.0.1:8000](http://127.0.0.1:8000) on this PC, or port 8000
 on this machine’s LAN IP from another device.
+
+## Run on Ubuntu 24.04 (Docker on kuma-host)
+
+Intended checkout: `/opt/homelab/home-dashboard` on the Ubuntu Docker
+host that already runs Uptime Kuma (public example name: **kuma-host**).
+Python comes from the Ubuntu 24.04 image (`Dockerfile`); do not use a
+Windows `.venv` on that host. Use the Compose **plugin**:
+`docker compose` (not the legacy `docker-compose` binary).
+
+1. Clone or sync this repo to `/opt/homelab/home-dashboard`.
+2. Create `private/` on the server (never commit it). Copy the public
+   examples and edit real LAN values:
+
+   ```bash
+   mkdir -p private
+   cp public/services.example.yaml private/services.yaml
+   cp public/ip_map.example.yaml private/ip_map.yaml
+   cp public/obfuscate.example.yaml private/obfuscate.yaml
+   ```
+
+3. In `private/services.yaml`, set the NAS check to a network path
+   (there is no `Z:` drive on Ubuntu):
+
+   ```yaml
+   nas:
+     path: /mnt/nas
+     # drive: "Z:"   # Windows only — leave unset or unused on Linux
+     share: '\\10.42.0.30\shared'
+     host: 10.42.0.30
+     smb_port: 445
+   ```
+
+4. Mount the NAS share on the **host** (CIFS/NFS) at `/mnt/nas` (or set
+   `NAS_MOUNT_PATH` to your host mount). Compose bind-mounts that path
+   into the container at `/mnt/nas` read-only. The app only lists the
+   path; it does not store NAS credentials.
+5. Build and start (publishes host port **8000**):
+
+   ```bash
+   cd /opt/homelab/home-dashboard
+   docker compose up -d --build
+   ```
+
+Open `http://<kuma-host>:8000` on the LAN. `private/` is mounted
+read-only at `/app/private` and is excluded from the image via
+`.dockerignore`.
 
 ## Public examples
 

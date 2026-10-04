@@ -54,7 +54,11 @@ uptime_kuma:
 nas:
   id: nas
   name: Can I see my files on my NAS?
+  # Windows workstation: mapped drive listing.
   drive: "Z:"
+  # Ubuntu/Docker on kuma-host: there is no Z: drive. Prefer a bind-mounted
+  # network share path instead (see docker-compose.yml NAS_MOUNT_PATH).
+  # path: /mnt/nas
   share: '\\10.42.0.30\shared'
   host: 10.42.0.30
   smb_port: 445

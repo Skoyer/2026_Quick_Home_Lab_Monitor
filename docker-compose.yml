@@ -1,0 +1,19 @@
+# Home Lab Monitor on Ubuntu 24.04 + Docker Compose plugin (kuma-host).
+# Deploy checkout path (intended): /opt/homelab/home-dashboard
+# Use: docker compose up -d   (plugin form; not the old docker-compose binary)
+#
+# private/ is bind-mounted and must stay off git. Do not copy secrets into the image.
+
+services:
+  home-dashboard:
+    build: .
+    image: home-lab-monitor:local
+    container_name: home-dashboard
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./private:/app/private:ro
+      # Host CIFS/NFS mount of the NAS share (no Z: drive on Linux).
+      # Create the host mount first, then set nas.path: /mnt/nas in private/services.yaml.
+      - ${NAS_MOUNT_PATH:-/mnt/nas}:/mnt/nas:ro
+    restart: unless-stopped
